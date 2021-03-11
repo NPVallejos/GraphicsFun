@@ -2,6 +2,8 @@
 #include "GLFW/glfw3.h"
 #include <iostream>
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+
 int main()
 {
 	/** Initialize GLFW */
@@ -68,13 +70,23 @@ int main()
 	* void framebuffer_size_callback(GLFWwindow * window, int width, int height);
 	* ------------------------------------------------------
 	*/
-	void framebuffer_size_callback(GLFWwindow * window, int width, int height)
-	{
-		glViewport(0, 0, width, height);
-	}
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	/** TODO: Look at 'Ready your engines' section */
+	/** Start the render loop - only ends when the window is closed */
+	while (!glfwWindowShouldClose(window))
+	{
+		/**  All rendering commands draw to the back buffer and then output the final result to the front buffer: this prevents flickering/artifacts */
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
+	/** Clean up all allocated resources and exit all windows */
+	glfwTerminate();
 
 	return 0;
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
 }
