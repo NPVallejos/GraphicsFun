@@ -6,6 +6,26 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void toggleWireframeMode();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+// Shaders
+const char* vertexShaderSource = "#version 330 core\n"
+"layout (location = 0) in vec3 aPos;\n"
+"void main()\n"
+"{\n"
+"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"}\0";
+const char* fragmentShaderSource = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"void main()\n"
+"{\n"
+"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"}\n\0";
+const char* fragmentShaderSourceYellow = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"void main()\n"
+"{\n"
+"   FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
+"}\n\0";
+// Toggle bool
 bool bWireframeModeOn = false;
 
 int main()
@@ -88,16 +108,19 @@ int main()
 	/*				Build, compile, and link our shader program             */
 	/************************************************************************/
 	
-	/** 1. Setup Vertex Shader - we just set the position of each vertex nothing crazy */
-	const char* vertexShaderSource = "#version 330 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-		"void main()\n"
-		"{\n"
-		"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-		"}\0";
+	/** 1. Setup Vertex Shader, Two Fragment Shaders, Two Shader Programs */
 	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	unsigned int fragmentShaderYellow = glCreateShader(GL_FRAGMENT_SHADER);
+	unsigned int shaderProgram = glCreateProgram();
+	unsigned int shaderProgramTwo = glCreateProgram();
+	/** 2. Compile Shaders */
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 	glCompileShader(vertexShader);
+	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	glCompileShader(fragmentShader);
+	glShaderSource(fragmentShaderYellow, 1, &fragmentShaderSourceYellow, NULL);
+	glCompileShader(fragmentShaderYellow);
 	// Check for shader compile errors
 	int success;
 	char infoLog[512];
@@ -107,17 +130,6 @@ int main()
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
 	}
-
-	/** 2. Setup Fragment Shader(s) - Just sets the color of our pixels to be orange */
-	const char* fragmentShaderSource = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-		"}\n\0";
-	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
 	// Check for shader compile errors
 	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
 	if (!success)
@@ -125,17 +137,6 @@ int main()
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
 	}
-
-	/** 2.2 Fragment Shader 2*/
-	const char* fragmentShaderSourceYellow = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"   FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
-		"}\n\0";
-	unsigned int fragmentShaderYellow = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShaderYellow, 1, &fragmentShaderSourceYellow, NULL);
-	glCompileShader(fragmentShaderYellow);
 	// Check for shader compile errors
 	glGetShaderiv(fragmentShaderYellow, GL_COMPILE_STATUS, &success);
 	if (!success)
@@ -143,12 +144,13 @@ int main()
 		glGetShaderInfoLog(fragmentShaderYellow, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
 	}
-
-	/** 3. Create Shader Program + Link our Two Shaders by attaching to a single Shader Program - OpenGL configures other shaders for us (Primitive Assembly | Geometry Shader | Rasterization | Tests and Blending) */
-	unsigned int shaderProgram = glCreateProgram();
+	/** Link our Two Shaders by attaching to a single Shader Program - OpenGL configures other shaders for us (Primitive Assembly | Geometry Shader | Rasterization | Tests and Blending) */
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
 	glLinkProgram(shaderProgram);
+	glAttachShader(shaderProgramTwo, vertexShader);
+	glAttachShader(shaderProgramTwo, fragmentShaderYellow);
+	glLinkProgram(shaderProgramTwo);
 	// check for linking errors
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
 	if (!success)
@@ -156,12 +158,6 @@ int main()
 		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
 	}
-
-	/** Create Shader Program 2 */
-	unsigned int shaderProgramTwo = glCreateProgram();
-	glAttachShader(shaderProgramTwo, vertexShader);
-	glAttachShader(shaderProgramTwo, fragmentShaderYellow);
-	glLinkProgram(shaderProgramTwo);
 	// check for linking errors
 	glGetProgramiv(shaderProgramTwo, GL_LINK_STATUS, &success);
 	if (!success)
@@ -169,8 +165,7 @@ int main()
 		glGetProgramInfoLog(shaderProgramTwo, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
 	}
-
-	/** 4. Delete shaders after linking to free up resources */
+	/** 3. Delete shaders after linking to free up resources */
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 	glDeleteShader(fragmentShaderYellow);
